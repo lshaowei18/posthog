@@ -124,6 +124,7 @@ class CohortFilter(BaseModel, extra="forbid"):
     key: Literal["id"]
     value: int
     negation: bool = False
+    value_property: int
 
 
 class PersonFilter(BaseModel, extra="forbid"):
