@@ -335,6 +335,7 @@ def property_to_expr(
     team: Team,
     scope: Literal["event", "person", "group", "session", "replay", "replay_entity", "revenue_analytics"] = "event",
     strict: bool = False,
+    is_person_id_override_properties_joined: bool = False,
 ) -> ast.Expr:
     if isinstance(property, dict):
         try:
@@ -350,7 +351,16 @@ def property_to_expr(
                 raise
             return ast.Constant(value=1)
     elif isinstance(property, list):
-        properties = [property_to_expr(p, team, scope, strict=strict) for p in property]
+        properties = [
+            property_to_expr(
+                p,
+                team,
+                scope,
+                strict=strict,
+                is_person_id_override_properties_joined=is_person_id_override_properties_joined,
+            )
+            for p in property
+        ]
         if len(properties) == 0:
             return ast.Constant(value=1)
         if len(properties) == 1:
@@ -381,12 +391,40 @@ def property_to_expr(
         if len(property.values) == 0:
             return ast.Constant(value=1)
         if len(property.values) == 1:
-            return property_to_expr(property.values[0], team, scope, strict=strict)
+            return property_to_expr(
+                property.values[0],
+                team,
+                scope,
+                strict=strict,
+                is_person_id_override_properties_joined=is_person_id_override_properties_joined,
+            )
 
         if property.type == PropertyOperatorType.AND or property.type == FilterLogicalOperator.AND_:
-            return ast.And(exprs=[property_to_expr(p, team, scope, strict=strict) for p in property.values])
+            return ast.And(
+                exprs=[
+                    property_to_expr(
+                        p,
+                        team,
+                        scope,
+                        strict=strict,
+                        is_person_id_override_properties_joined=is_person_id_override_properties_joined,
+                    )
+                    for p in property.values
+                ]
+            )
         else:
-            return ast.Or(exprs=[property_to_expr(p, team, scope, strict=strict) for p in property.values])
+            return ast.Or(
+                exprs=[
+                    property_to_expr(
+                        p,
+                        team,
+                        scope,
+                        strict=strict,
+                        is_person_id_override_properties_joined=is_person_id_override_properties_joined,
+                    )
+                    for p in property.values
+                ]
+            )
     elif isinstance(property, EmptyPropertyFilter):
         return ast.Constant(value=1)
     elif isinstance(property, FlagPropertyFilter):
@@ -464,7 +502,10 @@ def property_to_expr(
         value = property.value
 
         if property.type == "person" and scope != "person":
-            chain = ["person", "properties"]
+            if is_person_id_override_properties_joined:
+                chain = ["pdi", "person", "properties"]
+            else:
+                chain = ["person", "properties"]
         elif property.type == "event" and scope == "replay_entity":
             chain = ["events", "properties"]
         elif property.type == "session" and scope == "replay_entity":
@@ -593,6 +634,7 @@ def property_to_expr(
                         team,
                         scope,
                         strict=strict,
+                        is_person_id_override_properties_joined=is_person_id_override_properties_joined,
                     )
                     for v in value
                 ]
@@ -641,6 +683,7 @@ def property_to_expr(
                         team,
                         scope,
                         strict=strict,
+                        is_person_id_override_properties_joined=is_person_id_override_properties_joined,
                     )
                     for v in value
                 ]

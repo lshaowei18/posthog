@@ -41,9 +41,16 @@ class TestProperty(BaseTest):
             Literal["event", "person", "group", "session", "replay", "replay_entity", "revenue_analytics"]
         ] = None,
         strict: bool = True,
+        is_person_id_override_properties_joined: bool = False,
     ):
         return clear_locations(
-            property_to_expr(property, team=team or self.team, scope=scope or "event", strict=strict)
+            property_to_expr(
+                property,
+                team=team or self.team,
+                scope=scope or "event",
+                strict=strict,
+                is_person_id_override_properties_joined=is_person_id_override_properties_joined,
+            )
         )
 
     def _selector_to_expr(self, selector: str):
@@ -704,6 +711,16 @@ class TestProperty(BaseTest):
         self.assertEqual(
             str(e.exception),
             "The 'event' property filter does not work in 'person' scope",
+        )
+
+    def test_person_with_person_id_override_properties_joined(self):
+        self.assertEqual(
+            self._property_to_expr(
+                {"type": "person", "key": "a", "value": "b", "operator": "exact"},
+                scope="event",
+                is_person_id_override_properties_joined=True,
+            ),
+            self._parse_expr("pdi.person.properties.a = 'b'"),
         )
 
     def test_entity_to_expr_actions_type_with_id(self):
