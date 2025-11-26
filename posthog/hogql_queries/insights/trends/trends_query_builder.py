@@ -10,6 +10,7 @@ from posthog.schema import (
     DataWarehousePropertyFilter,
     EventsNode,
     HogQLQueryModifiers,
+    PersonsOnEventsMode,
     TrendsQuery,
 )
 
@@ -831,7 +832,14 @@ class TrendsQueryBuilder(DataWarehouseInsightQueryMixin):
                 if data_warehouse_properties:
                     filters.append(property_to_expr(data_warehouse_properties, self.team))
             else:
-                filters.append(property_to_expr(self.query.properties, self.team))
+                filters.append(
+                    property_to_expr(
+                        self.query.properties,
+                        self.team,
+                        is_person_id_override_properties_joined=self.modifiers.personsOnEventsMode
+                        == PersonsOnEventsMode.PERSON_ID_OVERRIDE_PROPERTIES_JOINED,
+                    )
+                )
 
         # Series Filters
         if series.properties is not None and series.properties != []:
